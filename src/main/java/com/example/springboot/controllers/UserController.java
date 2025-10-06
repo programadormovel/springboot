@@ -33,23 +33,26 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userRepository.save(userModel));
     }
 
-    @PostMapping("/users/login")
+    @PostMapping("/login")
+    @CrossOrigin(origins = "*")
     public ResponseEntity<Object> login(@RequestBody @Valid UserRecordDto userRecordDto) {
         UserModel userModel = new UserModel();
         BeanUtils.copyProperties(userRecordDto, userModel);
         Optional<UserModel> userO = Optional.ofNullable(userRepository.findByName(userModel.getName()));
-        if(userO.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("user not found.");
+        if (userO.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.OK).body("user not found.");
+        } else if (!userO.get().getPassword().equals(userModel.getPassword())) {
+            return ResponseEntity.status(HttpStatus.OK).body("password wrong.");
         }
 
-        return ResponseEntity.status(HttpStatus.OK).body("Usuário logado com sucesso!");
+        return ResponseEntity.status(HttpStatus.OK).body(userO.get());
     }
 
     @GetMapping("/users")
     public ResponseEntity<List<UserModel>> getAllusers() {
         List<UserModel> usersList = userRepository.findAll();
-        if(!usersList.isEmpty()) {
-            for(UserModel user : usersList) {
+        if (!usersList.isEmpty()) {
+            for (UserModel user : usersList) {
                 UUID id = user.getId();
                 user.add(linkTo(methodOn(UserController.class).getOneuser(id)).withSelfRel());
             }
@@ -58,9 +61,9 @@ public class UserController {
     }
 
     @GetMapping("/users/{id}")
-    public ResponseEntity<Object> getOneuser(@PathVariable(value="id") UUID id) {
+    public ResponseEntity<Object> getOneuser(@PathVariable(value = "id") UUID id) {
         Optional<UserModel> userO = userRepository.findById(id);
-        if(userO.isEmpty()) {
+        if (userO.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("user not found.");
         }
         userO.get().add(linkTo(methodOn(UserController.class).getAllusers()).withRel("users List"));
@@ -68,10 +71,10 @@ public class UserController {
     }
 
     @PutMapping("/users/{id}")
-    public ResponseEntity<Object> updateuser(@PathVariable(value="id") UUID id,
-                                                @RequestBody @Valid UserRecordDto userRecordDto) {
+    public ResponseEntity<Object> updateuser(@PathVariable(value = "id") UUID id,
+            @RequestBody @Valid UserRecordDto userRecordDto) {
         Optional<UserModel> userO = userRepository.findById(id);
-        if(userO.isEmpty()) {
+        if (userO.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("user not found.");
         }
         var userModel = userO.get();
@@ -80,9 +83,9 @@ public class UserController {
     }
 
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<Object> deleteuser(@PathVariable(value="id") UUID id) {
+    public ResponseEntity<Object> deleteuser(@PathVariable(value = "id") UUID id) {
         Optional<UserModel> userO = userRepository.findById(id);
-        if(userO.isEmpty()) {
+        if (userO.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("user not found.");
         }
         userRepository.delete(userO.get());
